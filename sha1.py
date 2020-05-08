@@ -1,5 +1,6 @@
 import argparse
 import struct
+import hashlib
 
 
 class SHA1:
@@ -9,12 +10,12 @@ class SHA1:
 
     def __init__(self, data):
         """
-        :param - input data of the user
-
         Initialize the class with the input data and some 5 x 8-bit hexadecimal constants h0-->h4.
         They correspond to (1732584193, 4023233417, 2562383102, 271733878, 3285377520) in decimal 
         and (01100111010001010010001100000001, 01100111010001010010001100000001, 01100111010001010010001100000001, 
         01100111010001010010001100000001, 11000011110100101110000111110000) in binary.
+
+        @param data: input data of the user
         """
         self.data = data
         self.ascii2bin()
@@ -25,20 +26,20 @@ class SHA1:
             0x10325476,
             0xC3D2E1F0
         ]
+        self.hash()
 
     @staticmethod
     def left_rotate(n, b):
         """
-        :param - the number 'n' to left rotate
-        :param - number of bits 'b' by which 'n' is left rotated
-        
         Left rotate a 32-bit integer 'n' by 'b' bits. The value is ANDed with 0xFFFFFFFF so that even if n is not a 32-bit 
         integer, comes into action when n is greater than 32-bits, the output will always be a 32-bit integer.
         Example - when 4294967295 (decimal value of 0xFFFFFFFF) is left rotated by 1 bit:
             - the output is the same, 4294967295, when ANDed with 0xFFFFFFFF
             - the output is 8589934591 when it is not ANDed with 0xFFFFFFFF
 
-        :return - returns the left rotated value
+        @param n: the number 'n' to left rotate
+        @param b : number of bits 'b' by which 'n' is left rotated
+        @return: returns the left rotated value
         """
         return ((n << b) | (n >> (32 - b))) & 0xFFFFFFFF
 
@@ -75,61 +76,64 @@ class SHA1:
         """
         Splits the data into 512-bit (or) 64 byte chunks.
         """
-        self.chunks = [self.data[i: i + 512]
-                       for i in range(0, len(self.data), 512)]
+        self.chunks = [self.data[i: i + 512] for i in range(0, len(self.data), 512)]
 
-    def chunks2words(self):
+    def chunks2words(self, chunk):
         """
         Break the chunks to 16 x 32-bit (or) 4 byte words.
-        """
-        self.words16 = [[chunk[i: i + 32]
-                         for i in range(0, 512, 32)] for chunk in self.chunks]
 
-    def extend_words(self):
+        @param chunk: a 512-bit chunk
+        @return: returns a 1D array of size 16
+        """
+        return [chunk[i: i + 32] for i in range(0, 512, 32)]
+
+    def extend_words(self, words):
         """
         Takes the first 16 words and extends it to 80 for each chunk.
-        """
-        self.words80 = [[0] * 80] * len(self.words16)
-        for i in range(len(self.words16)):
-            for j in range(len(self.words16[i])):
-                self.words80[i][j] = int(self.words16[i][j], 2)
 
-        for i in range(0, len(self.words16)):
-            for j in range(16, 80):
-                temp = self.left_rotate(
-                    (self.words80[i][j-3] ^ self.words80[i][j-8] ^ self.words80[i][j-14] ^ self.words80[i][j-16]), 1)
-                self.words80[i][j] = temp
+        @param words: takes a list of 16 words which is created from self.chunks
+        """
+        extendedWords = [0] * 80
+        # Copying data from words as int
+        for i in range(0, len(words)):
+            extendedWords[i] = int(words[i], 2)
+        # Extending the first 16 words to 80 words
+        for i in range(16, 80):
+            temp = self.left_rotate((extendedWords[i-3] ^ extendedWords[i-8] ^ extendedWords[i-14] ^ extendedWords[i-16]), 1)
+            extendedWords[i] = temp
+
+        return extendedWords
 
     def hash(self):
         self.padding()
         self.split2chunks()
-        self.chunks2words()
-        self.extend_words()
 
-        for i in range(0, len(self.words80)):
+        for chunk in self.chunks:
+            words = self.chunks2words(chunk)
+            extendedWords = self.extend_words(words)
             a, b, c, d, e = self.h
-            for j in range(0, len(self.words80[i])):
+            for i in range(0, len(extendedWords)):
 
                 # Function 1
-                if 0 <= j <= 19:
+                if 0 <= i <= 19:
                     f = d ^ (b & (c ^ d))
                     k = 0x5A827999
                 # Function 2
-                elif 20 <= j <= 39:
+                elif 20 <= i <= 39:
                     f = b ^ c ^ d
                     k = 0x6ED9EBA1
                 # Function 3
-                elif 40 <= j <= 59:
+                elif 40 <= i <= 59:
                     f = (b & c) | (b & d) | (c & d)
                     k = 0x8F1BBCDC
                 # Function 4
-                elif 60 <= j <= 79:
+                elif 60 <= i <= 79:
                     f = b ^ c ^ d
                     k = 0xCA62C1D6
 
                 # Update the values of a, b, c, d, e
                 temp = (self.left_rotate(a, 5) + f + e +
-                        k + self.words80[i][j]) & 0xFFFFFFFF
+                        k + extendedWords[i]) & 0xFFFFFFFF
                 e = d
                 d = c
                 c = self.left_rotate(b, 30)
@@ -145,19 +149,26 @@ class SHA1:
                 self.h[4] + e & 0xFFFFFFFF
             )
 
-        print(hex(self.h[0]), hex(self.h[1]), hex(
-            self.h[2]), hex(self.h[3]), hex(self.h[4]))
+    def hexdigest(self):
+        """
+        Prints the hash value.
+        """
+        hashedObject = hex(self.h[0])[2:].zfill(8) + hex(self.h[1])[2:].zfill(8) + hex(self.h[2])[2:].zfill(8) + hex(self.h[3])[2:].zfill(8) + hex(self.h[4])[2:].zfill(8)
+        print(hashedObject)
 
 
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f')
-    parser.add_argument('s')
+    parser.add_argument('-f', '--file', nargs = '*', metavar = 'file', dest='files', help = 'Hash multiple files or all the files in a folder.')
+    parser.add_argument('-s', '--string', metavar = 'string',help = 'Hash a string.')                                      # Hash multiple lines support.
     hashObject = input("Enter the string to hash > ")
+    result = hashlib.sha1(hashObject.encode())
     hashObject = bytes(hashObject, 'utf-8')
-    s = SHA1(hashObject).hash()
-
+    s = SHA1(hashObject)
+    s.hexdigest()
+    print("hashlib: ", result.hexdigest())
+    parser.print_help()
 
 if __name__ == "__main__":
     # print(SHA1('').left_rotate(4294967295, 1))
