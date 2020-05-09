@@ -162,6 +162,9 @@ class SHA1:
         """
         Returns the hex digest of the hashObject.
         """
+        # ! BUG - All leading zeros are removed in binary which results in reduced length of hex digest (less than 160 bits/ 40 letters).
+        # ? FIX - Since only leading zeros are removed, zfill() can be used to fill the leading zeros again.
+        
         sha1Digest = hex(self.h[0])[2:].zfill(8) + hex(self.h[1])[2:].zfill(8) + hex(
             self.h[2])[2:].zfill(8) + hex(self.h[3])[2:].zfill(8) + hex(self.h[4])[2:].zfill(8)
         return sha1Digest
