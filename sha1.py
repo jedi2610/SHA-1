@@ -38,7 +38,7 @@ class SHA1:
             - the output is 8589934591 when it is not ANDed with 0xFFFFFFFF
 
         @param n: the number 'n' to left rotate
-        @param b : number of bits 'b' by which 'n' is left rotated
+        @param b: number of bits 'b' by which 'n' is left rotated
         @return: returns the left rotated value
         """
         return ((n << b) | (n >> (32 - b))) & 0xFFFFFFFF
@@ -59,8 +59,8 @@ class SHA1:
         # Appending a 1 at the end
         self.data += "1"
 
-        fillValue = (len(self.data) // 512) + 1
         # Calculating number of 0's to append
+        fillValue = (len(self.data) // 512) + 1
         fillValue = (fillValue * 512) - 64
 
         if len(self.data) % 512 != 448:
@@ -98,6 +98,7 @@ class SHA1:
         # Copying data from words as int
         for i in range(0, len(words)):
             extendedWords[i] = int(words[i], 2)
+
         # Extending the first 16 words to 80 words
         for i in range(16, 80):
             temp = self.left_rotate(
@@ -110,12 +111,18 @@ class SHA1:
         self.padding()
         self.split2chunks()
 
+        # The crux/core of SHA-1 hashing technique.
         for chunk in self.chunks:
+
+            # Splitting chunks to words and initialising/updating a, b, c, d, e.
             words = self.chunks2words(chunk)
             extendedWords = self.extend_words(words)
             a, b, c, d, e = self.h
-            for i in range(0, len(extendedWords)):
 
+            # Randamize the values of a, b, c, d, e by performing some functions
+            for i in range(0, len(extendedWords)):
+                
+                # The function executed is based on the value of 'i'.
                 # Function 1
                 if 0 <= i <= 19:
                     f = d ^ (b & (c ^ d))
@@ -153,7 +160,7 @@ class SHA1:
 
     def hexdigest(self):
         """
-        Returns the hex digest of the hashobject.
+        Returns the hex digest of the hashObject.
         """
         sha1Digest = hex(self.h[0])[2:].zfill(8) + hex(self.h[1])[2:].zfill(8) + hex(
             self.h[2])[2:].zfill(8) + hex(self.h[3])[2:].zfill(8) + hex(self.h[4])[2:].zfill(8)
@@ -164,7 +171,9 @@ def main(args):
     """
     Driver Code.
     """
+    # TODO - Write tests using hashlib module.
     if args.files != None:
+
         # Hashing all the files given as the command line args.
         for file in args.files:
             try:
@@ -175,6 +184,7 @@ def main(args):
                 print("Error, could not find file \"" + file + "\"") 
 
     elif args.string != None:
+
         # Hashing the string given as command line args.
         userInput = args.string
         userInput = bytes(userInput, 'utf-8')
@@ -182,8 +192,9 @@ def main(args):
         print("SHA-1 digest: " + hashObject.hexdigest())
 
     else:
+
         # If no args are given, get the input from user.
-        # TODO Hash multiple lines support.
+        # TODO - Hash multiple lines support.
         userInput = input("Enter the string to hash > ")
         userInput = bytes(userInput, 'utf-8')
         hashObject = SHA1(userInput)
