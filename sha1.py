@@ -76,7 +76,8 @@ class SHA1:
         """
         Splits the data into 512-bit (or) 64 byte chunks.
         """
-        self.chunks = [self.data[i: i + 512] for i in range(0, len(self.data), 512)]
+        self.chunks = [self.data[i: i + 512]
+                       for i in range(0, len(self.data), 512)]
 
     def chunks2words(self, chunk):
         """
@@ -99,7 +100,8 @@ class SHA1:
             extendedWords[i] = int(words[i], 2)
         # Extending the first 16 words to 80 words
         for i in range(16, 80):
-            temp = self.left_rotate((extendedWords[i-3] ^ extendedWords[i-8] ^ extendedWords[i-14] ^ extendedWords[i-16]), 1)
+            temp = self.left_rotate(
+                (extendedWords[i-3] ^ extendedWords[i-8] ^ extendedWords[i-14] ^ extendedWords[i-16]), 1)
             extendedWords[i] = temp
 
         return extendedWords
@@ -151,25 +153,52 @@ class SHA1:
 
     def hexdigest(self):
         """
-        Prints the hash value.
+        Returns the hex digest of the hashobject.
         """
-        hashedObject = hex(self.h[0])[2:].zfill(8) + hex(self.h[1])[2:].zfill(8) + hex(self.h[2])[2:].zfill(8) + hex(self.h[3])[2:].zfill(8) + hex(self.h[4])[2:].zfill(8)
-        print(hashedObject)
+        sha1Digest = hex(self.h[0])[2:].zfill(8) + hex(self.h[1])[2:].zfill(8) + hex(
+            self.h[2])[2:].zfill(8) + hex(self.h[3])[2:].zfill(8) + hex(self.h[4])[2:].zfill(8)
+        return sha1Digest
 
 
-def main():
+def main(args):
+    """
+    Driver Code.
+    """
+    if args.files != None:
+        # Hashing all the files given as the command line args.
+        for file in args.files:
+            try:
+                hashfile = open(file, 'rb').read()
+                hashObject = SHA1(hashfile)
+                print("SHA-1 digest of \"" + file + "\": " + hashObject.hexdigest())
+            except IOError:
+                print("Error, could not find file \"" + file + "\"") 
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--file', nargs = '*', metavar = 'file', dest='files', help = 'Hash multiple files or all the files in a folder.')
-    parser.add_argument('-s', '--string', metavar = 'string',help = 'Hash a string.')                                      # Hash multiple lines support.
-    hashObject = input("Enter the string to hash > ")
-    result = hashlib.sha1(hashObject.encode())
-    hashObject = bytes(hashObject, 'utf-8')
-    s = SHA1(hashObject)
-    s.hexdigest()
-    print("hashlib: ", result.hexdigest())
-    parser.print_help()
+    elif args.string != None:
+        # Hashing the string given as command line args.
+        userInput = args.string
+        userInput = bytes(userInput, 'utf-8')
+        hashObject = SHA1(userInput)
+        print("SHA-1 digest: " + hashObject.hexdigest())
+
+    else:
+        # If no args are given, get the input from user.
+        # TODO Hash multiple lines support.
+        userInput = input("Enter the string to hash > ")
+        userInput = bytes(userInput, 'utf-8')
+        hashObject = SHA1(userInput)
+        print("SHA-1 digest: " + hashObject.hexdigest())
+
 
 if __name__ == "__main__":
     # print(SHA1('').left_rotate(4294967295, 1))
-    main()
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--file', nargs='*', metavar='file', dest='files',
+                        type=str, help='Hash multiple files or all the files in a folder.')
+    parser.add_argument('-s', '--string', metavar='string',
+                        dest='string', type=str, help='Hash a string.')
+    # parser.print_help()
+    args = parser.parse_args()
+    main(args)
