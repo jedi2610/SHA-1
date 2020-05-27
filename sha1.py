@@ -208,7 +208,7 @@ if __name__ == "__main__":
     # print(SHA1('').left_rotate(4294967295, 1))
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Takes in a file or string as argument and returns 160-bit hash value.")
     parser.add_argument('-f', '--file', nargs='*', metavar='file', dest='files',
                         type=str, help='Hash multiple files.')
     parser.add_argument('-s', '--string', metavar='string',
