@@ -9,6 +9,8 @@
 ```
 usage: sha1.py [-h] [-f [file [file ...]]] [-s string]
 
+Takes in a file or string as argument and returns 160-bit hash value.
+
 optional arguments:
   -h, --help            show this help message and exit
   -f [file [file ...]], --file [file [file ...]]
