@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--file', nargs='*', metavar='file', dest='files',
-                        type=str, help='Hash multiple files or all the files in a folder.')
+                        type=str, help='Hash multiple files.')
     parser.add_argument('-s', '--string', metavar='string',
                         dest='string', type=str, help='Hash a string.')
     # parser.print_help()
